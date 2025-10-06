@@ -1,0 +1,30 @@
+name: Asyntai - AI Chatbot
+slug: asyntai-ai-chatbot
+type: plugin
+version: 1.0.0
+description: 'Asyntai – AI Chatbot widget integration for Grav'
+icon: comments
+author:
+  name: Asyntai
+  email: hello@asyntai.com
+homepage: 'https://asyntai.com'
+keywords: chatbot, ai, support, assistant
+license: MIT
+
+dependencies:
+  - { name: grav, version: '>=1.6.0' }
+
+form:
+  validation: loose
+  fields:
+    info:
+      type: display
+      size: large
+      label: ' '
+      markdown: true
+      content: |
+        Manage connection in the Asyntai admin page.
+
+        Click here: [Open Asyntai]({{ base_url_relative ~ (config.plugins.admin.route ?: '/admin') ~ '/asyntai' }})
+
+
