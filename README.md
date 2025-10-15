@@ -12,7 +12,7 @@ Manual template usage:
   `{{ asyntai_widget()|raw }}`
 
 Installation:
-- Copy the `asyntai` folder into your Grav installation at `user/plugins/asyntai`.
+- Copy the `asyntai-ai-chatbot` folder into your Grav installation at `user/plugins/asyntai-ai-chatbot`.
 - Clear Grav cache if needed.
 
 Support:
