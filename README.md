@@ -12,6 +12,8 @@ This plugin embeds the Asyntai chatbot on your Grav site and provides a simple a
 - The chatbot is now enabled on your website
 - Set up your chatbot at [asyntai.com/dashboard](https://asyntai.com/dashboard#setup)
 
+**Note: Alternatively, if you don't want to use a plugin, you can also get a JavaScript snippet at [Asyntai.com/dashboard](https://asyntai.com/dashboard) and manually insert it into your web pages.**
+
 ## Why choose Asyntai?
 
 • **Increase conversions**: Instant, human like replies keep shoppers engaged and buying.
