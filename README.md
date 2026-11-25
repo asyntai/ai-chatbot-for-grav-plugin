@@ -5,9 +5,10 @@ It talks to your visitors, helps, explains, never misses a chat and increases co
 This plugin embeds the Asyntai chatbot on your Grav site and provides a simple admin page to connect your site to Asyntai.
 
 ## Installation:
-- Download the ZIP file from GitHub or from https://getgrav.org/download/plugins/asyntai/1.0.0
+- Install from the admin (Plugins, Add, search for "Asyntai") or with `bin/gpm install asyntai-ai-chatbot`, or download the ZIP file from GitHub
 - Extract/Copy the `asyntai-ai-chatbot` folder into your Grav installation at `user/plugins/asyntai-ai-chatbot`. The folder name must be exactly `asyntai-ai-chatbot` otherwise you will not see the plugin in the admin panel
 - Go to your admin panel and in your left sidebar you should see Asyntai AI chatbot, click on it
+- Leave "Share my published pages with the chatbot" ticked if you want the chatbot to read your pages directly
 - Click 'Get started' and connect your Asyntai account or create a new free account
 - The chatbot is now enabled on your website
 - Set up your chatbot at [asyntai.com/dashboard](https://asyntai.com/dashboard#setup)
@@ -22,17 +23,20 @@ This plugin embeds the Asyntai chatbot on your Grav site and provides a simple a
 
 •	**Knows your website**: Customized just for you; it follows your instructions.
 
+•	**Reads your pages directly**: Optionally shares your published pages with the chatbot, so its answers stay up to date. Only pages any visitor can open are shared.
+
 •	**Works in all languages**: Automatically detects and answers in the visitor’s language.
 
 •	**Fast responses (1–3s)**: Keeps customers from bouncing.
 
 
 ## Usage:
-- Go to Admin → Asyntai AI chatbot.
+- Go to Admin → Asyntai AI chatbot (Grav 1.7 admin and the Grav 2 admin are both supported).
 - Click "Get started" and complete the connection.
 - After connecting, the chatbot script is enabled on all public pages automatically.
 
 ## Manual template usage:
+- The widget goes on every page by itself. A theme can also place it with `{{ asyntai_widget() }}`.
 - If you don't want to use a plugin, you can also insert a Javascript snippet instead which you can retrieve in Asyntai dashboard.
 
 ## Support:
