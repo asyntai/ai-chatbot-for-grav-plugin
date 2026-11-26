@@ -112,6 +112,23 @@ class Feed
      */
     private static function refuse(array $query)
     {
+        $refused = self::checkSignature($query);
+
+        if ($refused === null && self::maintenance()) {
+            // 503, not 403: a 403 tells Asyntai the connection was removed.
+            return array(503, array('ok' => false, 'error' => 'The site is in maintenance mode.'));
+        }
+
+        return $refused;
+    }
+
+    /**
+     * @param array $query Query values.
+     *
+     * @return array|null
+     */
+    private static function checkSignature(array $query)
+    {
         $tokens = State::acceptedTokens();
 
         if (!$tokens) {
@@ -200,7 +217,7 @@ class Feed
             return false;
         }
 
-        $header = (array) $page->header();
+        $header = self::header($page);
 
         if (self::noindex($header)) {
             return false;
@@ -208,7 +225,7 @@ class Feed
 
         // Access rules on the page itself or on any parent.
         for ($node = $page; $node && !$node->root(); $node = $node->parent()) {
-            $nodeHeader = (array) $node->header();
+            $nodeHeader = self::header($node);
 
             foreach (self::ACCESS_KEYS as $key) {
                 if (!empty($nodeHeader[$key])) {
@@ -221,7 +238,79 @@ class Feed
             }
         }
 
-        return true;
+        return self::guestMayOpen($page);
+    }
+
+    /**
+     * A page header as an array. On flex pages header() is a Header object,
+     * whose fields an (array) cast does not expose.
+     *
+     * @param object $page A Grav page.
+     *
+     * @return array
+     */
+    private static function header($page)
+    {
+        $header = $page->header();
+
+        if (is_object($header) && method_exists($header, 'toArray')) {
+            $header = $header->toArray();
+        } elseif (is_object($header)) {
+            $header = get_object_vars($header);
+        }
+
+        return is_array($header) ? $header : array();
+    }
+
+    /**
+     * Ask the login plugin, when present, whether a guest may open the page.
+     * This covers rules other than page headers: site-wide login, and other
+     * plugins that answer the login plugin's page check.
+     *
+     * @param object $page A Grav page.
+     *
+     * @return bool
+     */
+    private static function guestMayOpen($page)
+    {
+        $grav = Grav::instance();
+
+        if (!isset($grav['login']) || !method_exists($grav['login'], 'isUserAuthorizedForPage')) {
+            return true;
+        }
+
+        try {
+            $guest = $grav['accounts']->load('');
+            $guest->authenticated = false;
+            // The login plugin's settings with the page's own login: header
+            // on top, as the login plugin merges them itself.
+            $settings = (array) $grav['config']->get('plugins.login', array());
+            $header = self::header($page);
+
+            if (isset($header['login']) && is_array($header['login'])) {
+                $settings = array_replace_recursive($settings, $header['login']);
+            }
+
+            $config = new \Grav\Common\Data\Data($settings);
+
+            return (bool) $grav['login']->isUserAuthorizedForPage($guest, $page, $config);
+        } catch (\Throwable $e) {
+            // When we cannot tell, the page stays out.
+            return false;
+        }
+    }
+
+    /**
+     * True while the site is in maintenance mode (the maintenance plugin).
+     *
+     * @return bool
+     */
+    public static function maintenance()
+    {
+        $config = Grav::instance()['config'];
+
+        return (bool) $config->get('plugins.maintenance.enabled', false)
+            && (bool) $config->get('plugins.maintenance.active', false);
     }
 
     /**
@@ -292,7 +381,7 @@ class Feed
             'content' => $text,
         );
 
-        $header = (array) $page->header();
+        $header = self::header($page);
         $summary = isset($header['metadata']) && is_array($header['metadata']) && isset($header['metadata']['description'])
             ? trim((string) $header['metadata']['description']) : '';
 

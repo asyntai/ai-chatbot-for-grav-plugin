@@ -124,13 +124,9 @@
   function poll(state, attempt) {
     if (attempt > 300) { say('The sign-in took too long. Please press Get started again.', false); return; }
     call('poll', { state: state }).then(function (data) {
-      if (data && data.ready && data.site_id) {
+      if (data && data.ready) {
         say('Connected. Saving...', true);
-        return call('finish', {
-          site_id: data.site_id,
-          script_url: data.script_url || '',
-          account_email: data.account_email || ''
-        }).then(function () { window.location.reload(); });
+        return call('finish', {}).then(function () { window.location.reload(); });
       }
       setTimeout(function () { poll(state, attempt + 1); }, 2000);
     }).catch(function (error) {

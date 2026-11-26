@@ -1,7 +1,7 @@
 name: Asyntai - AI Chatbot
 slug: asyntai-ai-chatbot
 type: plugin
-version: 1.1.0
+version: 1.1.1
 description: 'AI chatbot for your Grav site. Answers visitors day and night, from your own published pages.'
 icon: comments
 author:

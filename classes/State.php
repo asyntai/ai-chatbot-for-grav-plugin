@@ -27,8 +27,12 @@ class State
     /** Every key a disconnect forgets. */
     const KEYS = array(
         'site_id', 'script_url', 'account_email', 'feed_token', 'feed_enabled',
-        'pending_token', 'state', 'state_at',
+        'pending_token', 'pending_at', 'state', 'state_at',
+        'polled_site_id', 'polled_email', 'polled_script',
     );
+
+    /** How long a handshake, and its pending feed key, stays valid. */
+    const STATE_TTL = 900;
 
     const DEFAULT_SCRIPT = 'https://asyntai.com/static/js/chat-widget.js';
 
@@ -235,7 +239,32 @@ class State
     {
         $url = trim(self::get('script_url', ''));
 
-        return preg_match('#^https://[^\s"\'<>]+$#i', $url) ? $url : self::DEFAULT_SCRIPT;
+        return self::isOurScript($url) ? $url : self::DEFAULT_SCRIPT;
+    }
+
+    /**
+     * Only a widget script on Asyntai's own domain, or on the server set in
+     * ASYNTAI_CHATBOT_ORIGIN, is ever put on the site.
+     *
+     * @param string $url Address.
+     *
+     * @return bool
+     */
+    public static function isOurScript($url)
+    {
+        if (!is_string($url) || !preg_match('#^https://([a-z0-9.-]+)(:\d+)?/[^\s"\'<>]*$#i', $url, $m)) {
+            return false;
+        }
+
+        $host = strtolower($m[1]);
+
+        if ($host === 'asyntai.com' || substr($host, -12) === '.asyntai.com') {
+            return true;
+        }
+
+        $origin = parse_url(self::origin(), PHP_URL_HOST);
+
+        return defined('ASYNTAI_CHATBOT_ORIGIN') && $origin && strtolower($origin) === $host;
     }
 
     /**
@@ -260,9 +289,12 @@ class State
             $tokens[] = self::get('feed_token');
         }
 
+        // A key from a sign-in that never finished stops working after the
+        // handshake window.
         $pending = self::get('pending_token', '');
+        $pendingAt = (int) self::get('pending_at', '0');
 
-        if ($pending !== '') {
+        if ($pending !== '' && $pendingAt > 0 && time() - $pendingAt <= self::STATE_TTL) {
             $tokens[] = $pending;
         }
 

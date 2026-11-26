@@ -142,9 +142,9 @@
       if (attempt > 300) { this._say('The sign-in took too long. Please press Get started again.', false); return; }
       try {
         var data = await this._task('poll', { state: state });
-        if (data && data.ready && data.site_id) {
+        if (data && data.ready) {
           this._say('Connected. Saving...', true);
-          await this._task('finish', { site_id: data.site_id, script_url: data.script_url || '', account_email: data.account_email || '' });
+          await this._task('finish', {});
           window.__GRAV_TOAST && window.__GRAV_TOAST.success('Asyntai connected');
           this._load();
           return;

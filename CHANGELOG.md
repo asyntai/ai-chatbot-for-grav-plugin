@@ -1,3 +1,10 @@
+# v1.1.1
+## 11/26/2026
+
+1. [](#improved)
+    * Page sharing follows more of the site's access settings
+    * Improvements to the connect process
+
 # v1.1.0
 ## 11/25/2026
 

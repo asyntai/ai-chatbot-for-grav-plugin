@@ -27,7 +27,7 @@ use Grav\Common\Grav;
 class Connect
 {
     /** How long a handshake stays valid, in seconds. */
-    const STATE_TTL = 900;
+    const STATE_TTL = State::STATE_TTL;
 
     /**
      * Run one task. Throws \RuntimeException with an HTTP status as its code.
@@ -111,8 +111,14 @@ class Connect
             }
 
             State::set('pending_token', $token);
+            State::set('pending_at', (string) time());
         } else {
             State::forget('pending_token');
+            State::forget('pending_at');
+        }
+
+        foreach (array('polled_site_id', 'polled_email', 'polled_script') as $key) {
+            State::forget($key);
         }
 
         State::set('state', $state);
@@ -156,13 +162,19 @@ class Connect
         }
 
         $data = $decoded['data'];
+        $siteId = trim((string) $data['site_id']);
 
-        return array(
-            'ready'         => true,
-            'site_id'       => (string) $data['site_id'],
-            'script_url'    => isset($data['script_url']) ? (string) $data['script_url'] : '',
-            'account_email' => isset($data['account_email']) ? (string) $data['account_email'] : '',
-        );
+        if (!preg_match('/^[A-Za-z0-9_-]{6,64}$/', $siteId)) {
+            return array('ready' => false);
+        }
+
+        // Kept here, so finish() stores what PHP received, never what the
+        // browser sends back.
+        State::set('polled_site_id', $siteId);
+        State::set('polled_email', isset($data['account_email']) ? (string) $data['account_email'] : '');
+        State::set('polled_script', isset($data['script_url']) ? (string) $data['script_url'] : '');
+
+        return array('ready' => true);
     }
 
     /**
@@ -174,38 +186,37 @@ class Connect
      */
     private static function finish(array $payload)
     {
-        // A finish only follows a handshake this site started.
-        if (State::get('state', '') === '') {
+        // Only the result PHP itself got from polling Asyntai is stored.
+        $siteId = State::get('polled_site_id', '');
+
+        if (State::get('state', '') === '' || $siteId === '') {
             throw new \RuntimeException('Unknown handshake', 400);
-        }
-
-        $siteId = isset($payload['site_id']) ? trim((string) $payload['site_id']) : '';
-
-        if (!preg_match('/^[A-Za-z0-9_-]{6,64}$/', $siteId)) {
-            throw new \RuntimeException('Invalid site id', 400);
         }
 
         State::set('site_id', $siteId);
 
-        $scriptUrl = isset($payload['script_url']) ? trim((string) $payload['script_url']) : '';
+        $scriptUrl = trim(State::get('polled_script', ''));
 
-        if ($scriptUrl !== '' && preg_match('#^https://[^\s"\'<>]+$#i', $scriptUrl)) {
+        if (State::isOurScript($scriptUrl)) {
             State::set('script_url', $scriptUrl);
+        } else {
+            State::forget('script_url');
         }
 
-        $email = isset($payload['account_email']) ? trim((string) $payload['account_email']) : '';
+        $email = trim(State::get('polled_email', ''));
         State::set('account_email', function_exists('mb_substr') ? mb_substr($email, 0, 255) : substr($email, 0, 255));
 
         $pending = State::get('pending_token', '');
+        $pendingAt = (int) State::get('pending_at', '0');
 
-        if ($pending !== '') {
+        if ($pending !== '' && time() - $pendingAt <= self::STATE_TTL) {
             State::set('feed_token', $pending);
             State::set('feed_enabled', '1');
-            State::forget('pending_token');
         }
 
-        State::forget('state');
-        State::forget('state_at');
+        foreach (array('pending_token', 'pending_at', 'state', 'state_at', 'polled_site_id', 'polled_email', 'polled_script') as $key) {
+            State::forget($key);
+        }
 
         return array('ok' => true);
     }
@@ -226,6 +237,12 @@ class Connect
         }
 
         State::set('feed_enabled', $on ? '1' : '0');
+
+        if (!$on) {
+            // Off means off: no key from an earlier sign-in keeps working.
+            State::forget('pending_token');
+            State::forget('pending_at');
+        }
 
         return array('ok' => true, 'enabled' => $on);
     }
